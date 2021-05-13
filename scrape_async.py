@@ -90,7 +90,7 @@ async def get_product_page(session, product):
                 if component_data:
                     data = json.loads(component_data.group().replace("\\", ""))
                     button_state = data["buttonState"]["buttonState"]
-                    LOG.debug("%s: %s", button_state, product["title"])
+                    LOG.info("%s: %s", button_state, product["title"])
                     if button_state == "ADD_TO_CART":
                         notify(product)
     except asyncio.exceptions.TimeoutError:
