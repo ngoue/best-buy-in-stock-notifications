@@ -46,7 +46,6 @@ def notify(product):
             item = table.get_item(
                 Key={"url": product["url"], "arn": arn}).get('Item')
             if item is None:
-                LOG.info("notification sent: %s, %s", arn, product["url"])
                 topic = sns.Topic(arn)
                 topic.publish(
                     Subject="{} is in stock at BestBuy",
@@ -55,14 +54,16 @@ def notify(product):
                         product["url"],
                     ),
                 )
+                LOG.info("notification sent: %s, %s", arn, product["url"])
                 table.put_item(Item={
                     "url": product["url"],
                     "arn": arn,
                     "inStock": int(datetime.datetime.now().timestamp()) + IN_STOCK_EXP,
                 })
+                LOG.debug("notifications paused for %s seconds: %s", IN_STOCK_EXP, arn)
             else:
                 diff = item["inStock"] - int(datetime.datetime.now().timestamp())
-                LOG.debug("Notifications paused for %s seconds: %s", diff, arn)
+                LOG.debug("notifications paused for %s seconds: %s", diff, arn)
     except Exception:
         LOG.exception("error sending notification: %s :: %s", arn, product["url"])
 
