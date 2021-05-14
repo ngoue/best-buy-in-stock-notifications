@@ -33,7 +33,7 @@ RE_COMPONENT_DATA = re.compile(r'{\\"app\\":.*}}')
 IN_STOCK_TABLE = "inStock"
 # Number of seconds we should stop sending notifications after a product
 # comes in stock
-IN_STOCK_EXP = 3600
+IN_STOCK_EXP = 300
 
 
 def notify(product):
