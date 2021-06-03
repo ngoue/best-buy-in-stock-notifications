@@ -48,7 +48,7 @@ def notify(product):
             if item is None:
                 topic = sns.Topic(arn)
                 topic.publish(
-                    Subject="{} is in stock at BestBuy",
+                    Subject="{} is in stock at BestBuy".format(product["title"]),
                     Message="\n\n{} is in stock at BestBuy!\n\n{}".format(
                         product["title"],
                         product["url"],
