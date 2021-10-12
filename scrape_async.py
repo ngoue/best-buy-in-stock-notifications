@@ -12,7 +12,7 @@ import boto3
 # configure logging
 logging.basicConfig(
     format="%(asctime)s %(levelname)-8s %(message)s",
-    level=logging.INFO,
+    level=logging.DEBUG,
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 logging.getLogger("botocore").setLevel(logging.CRITICAL)
@@ -28,7 +28,7 @@ USER_AGENT = "PostmanRuntime/7.26.10"
 TIMEOUT = 30
 # Regex's for parsing the html
 RE_COMPONENT = re.compile(r"initializeComponent(\(.*?add-to-cart-button.*\))")
-RE_COMPONENT_DATA = re.compile(r'{\\"app\\":.*}}')
+RE_COMPONENT_DATA = re.compile(r'{\\"app\\":.*\\"buttonStateRaw\\":{}}')
 # The table we use to track if notifications have been sent
 IN_STOCK_TABLE = "inStock"
 # Number of seconds we should stop sending notifications after a product
@@ -82,8 +82,6 @@ async def get_product_page(session, product):
             timeout=aiohttp.ClientTimeout(total=TIMEOUT),
         ) as response:
             LOG.debug("downloaded: %s", product["url"])
-            RE_COMPONENT = re.compile(r"initializeComponent(\(.*?add-to-cart-button.*\))")
-            RE_COMPONENT_DATA = re.compile(r'{\\"app\\":.*}}')
             html = await response.text()
             component = RE_COMPONENT.search(html)
             if component:
