@@ -26,9 +26,8 @@ CONFIG_FILE = os.path.join(os.path.abspath(
 USER_AGENT = "PostmanRuntime/7.26.10"
 # Timeout (in seconds) for individual product page downloads
 TIMEOUT = 30
-# Regex's for parsing the html
-RE_COMPONENT = re.compile(r"initializeComponent(\(.*?add-to-cart-button.*\))")
-RE_COMPONENT_DATA = re.compile(r'{\\"app\\":.*\\"buttonStateRaw\\":{}}')
+# Regex for parsing the html
+RE_BUTTON_STATE = re.compile(r'"buttonState":"(.*?)"')
 # The table we use to track if notifications have been sent
 IN_STOCK_TABLE = "inStock"
 # Number of seconds we should stop sending notifications after a product
@@ -48,7 +47,7 @@ def notify(product):
             if item is None:
                 topic = sns.Topic(arn)
                 topic.publish(
-                    Subject="{} is in stock at BestBuy".format(product["title"]),
+                    Subject="Your product is in stock at BestBuy!".format(product["title"]),
                     Message="\n\n{} is in stock at BestBuy!\n\n{}".format(
                         product["title"],
                         product["url"],
@@ -83,15 +82,16 @@ async def get_product_page(session, product):
         ) as response:
             LOG.debug("downloaded: %s", product["url"])
             html = await response.text()
-            component = RE_COMPONENT.search(html)
-            if component:
-                component_data = RE_COMPONENT_DATA.search(component.group(1))
-                if component_data:
-                    data = json.loads(component_data.group().replace("\\", ""))
-                    button_state = data["buttonState"]["buttonState"]
-                    LOG.info("%s: %s", button_state, product["title"])
-                    if button_state in ["ADD_TO_CART", "CHECK_STORES"]:
-                        notify(product)
+            match = RE_BUTTON_STATE.search(html)
+            if match:
+                button_state = match.group(1)
+                if button_state in ["ADD_TO_CART", "CHECK_STORES"]:
+                    LOG.info("product available (%s): %s", button_state, product["title"])
+                    notify(product)
+                else:
+                    LOG.info("product unavailable (%s): %s", button_state, product["title"])
+            else:
+                LOG.debug("button state not found: %s", product["title"])
     except asyncio.exceptions.TimeoutError:
         LOG.warning('request timed out: %s', product["url"])
 
@@ -113,5 +113,7 @@ if __name__ == '__main__':
     except Exception as e:
         print(e)
         sys.exit(1)
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     asyncio.get_event_loop().run_until_complete(
         get_all_product_pages(config["products"]))
